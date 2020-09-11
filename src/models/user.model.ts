@@ -16,11 +16,11 @@ export type UserDocument = mongoose.Document & {
         name: string;
     };
 
-    comparePassword: comparePasswordFunction;
+    isValidPassword: isValidPasswordFunction;
     gravatar: (size: number) => string;
 };
 
-type comparePasswordFunction = (candidatePassword: string, resultCallback: (error: any, isMatch: any) => {}) => void;
+type isValidPasswordFunction = (password: string) => boolean;
 
 export interface AuthToken {
     accessToken: string;
@@ -64,13 +64,11 @@ userSchema.pre("save", function save(next) {
     });
 });
 
-const comparePassword: comparePasswordFunction = function (candidatePassword, resultCallback) {
-    bcrypt.compare(candidatePassword, this.password, (error: mongoose.Error, isMatch: boolean) => {
-        resultCallback(error, isMatch);
-    });
+const isValidPassword: (password: string) => Promise<boolean> = async function(password) {
+    return await bcrypt.compare(password, this.password);
 };
 
-userSchema.methods.comparePassword = comparePassword;
+userSchema.methods.isValidPassword = isValidPassword;
 
 /**
  * Helper method for getting user's gravatar.

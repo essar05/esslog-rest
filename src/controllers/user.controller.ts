@@ -6,6 +6,10 @@ import { check, validationResult } from "express-validator";
 import { Controller } from "../core/decorators/controller";
 import { Post } from "../core/decorators/post";
 import BaseController from "../core/base-controller";
+import jwt from "jsonwebtoken";
+import { SESSION_SECRET } from "../config/secrets";
+import { Get } from "../core/decorators/get";
+import { RequiresAuthentication } from "../core/decorators/requires-authentication";
 
 @Controller('/api/user')
 export class UserController extends BaseController {
@@ -48,7 +52,10 @@ export class UserController extends BaseController {
                     return next(error);
                 }
 
-                res.json();
+                const body = { username: user.username, email: user.email };
+                const token = jwt.sign({ user : body }, SESSION_SECRET);
+
+                res.json({ token });
             });
         })(req, res, next);
     };
@@ -57,6 +64,16 @@ export class UserController extends BaseController {
     public logout(req: Request, res: Response) {
         req.logout();
         res.json();
+    };
+
+    @RequiresAuthentication()
+    @Get('/me')
+    public me(req: Request, res: Response) {
+        res.json({
+            message : 'You made it to the secure route',
+            user : req.user,
+            token : req.query.secret_token
+        })
     };
 
     @Post('/seed')
